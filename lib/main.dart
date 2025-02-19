@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart'; 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'bloc/login_bloc.dart';
+import 'login_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,11 +12,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Login',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(), 
+    return BlocProvider(
+      create: (context) => LoginBloc(),
+      child: MaterialApp(
+        title: 'Flutter Login',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const LoginScreen(),
+      ),
     );
   }
 }

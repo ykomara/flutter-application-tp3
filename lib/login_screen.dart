@@ -1,59 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_login/flutter_login.dart';
-import 'dashboard_screen.dart'; 
-
-const users = {
-  'ykomara': '62333',
-  'medmo@gmail.com': '7517',
-};
+import 'dashboard_screen.dart';
+import 'bloc/login_bloc.dart';
+import 'bloc/login_event.dart';
+import 'bloc/login_state.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   Duration get loginTime => const Duration(milliseconds: 2250);
 
-  Future<String?> _authUser(LoginData data) {
-    debugPrint('Name: ${data.name}, Password: ${data.password}');
-    return Future.delayed(loginTime).then((_) {
-      if (!users.containsKey(data.name)) {
-        return 'User does not exist';
-      }
-      if (users[data.name] != data.password) {
-        return 'Incorrect password';
-      }
-      return null;
-    });
-  }
-
-  Future<String?> _signupUser(SignupData data) {
-    debugPrint('Signup Name: ${data.name}, Password: ${data.password}');
-    return Future.delayed(loginTime).then((_) => null);
-  }
-
-  Future<String?> _recoverPassword(String name) {
-    debugPrint('Recover Password for: $name');
-    return Future.delayed(loginTime).then((_) {
-      if (!users.containsKey(name)) {
-        return 'User does not exist';
-      }
-      return null;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return FlutterLogin(
-      title: 'LOGIN',
-      logo: const AssetImage('assets/images/image.png'),
-      userType: LoginUserType.text,
-      onLogin: _authUser,
-      onSignup: _signupUser,
-      onSubmitAnimationCompleted: () {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        );
-      },
-      onRecoverPassword: _recoverPassword,
+    return Scaffold(
+      body: BlocListener<LoginBloc, LoginState>(
+        listener: (context, state) {
+          if (state is LoginSuccess) {
+            debugPrint("Connexion réussie, ouverture du Dashboard...");
+            Future.microtask(() {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const DashboardScreen()),
+              );
+            });
+          } else if (state is LoginFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error), backgroundColor: Colors.red),
+            );
+          }
+        },
+        child: FlutterLogin(
+          title: 'LOGIN',
+          logo: const AssetImage('assets/images/image.png'),
+          userType: LoginUserType.name,
+          userValidator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Le nom d'utilisateur est requis";
+            }
+            return null;
+          },
+          onLogin: (data) async {
+            debugPrint("🔑 Tentative de connexion avec ${data.name}");
+            
+            context.read<LoginBloc>().add(
+              LoginButtonPressed(username: data.name, password: data.password),
+            );
+
+            await Future.delayed(const Duration(seconds: 2));
+
+            final state = context.read<LoginBloc>().state;
+            if (state is LoginFailure) {
+              return state.error;
+            }
+            return null;
+          },
+          onSignup: (_) => Future.delayed(loginTime, () => null),
+          onRecoverPassword: (name) => Future.delayed(loginTime, () {
+            if (!users.containsKey(name)) {
+              return 'Utilisateur non trouvé';
+            }
+            return null;
+          }),
+        ),
+      ),
     );
   }
 }

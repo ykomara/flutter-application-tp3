@@ -18,7 +18,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); 
+                Navigator.of(context).pushReplacementNamed('/');
               },
               child: const Text('Se déconnecter'),
             ),
